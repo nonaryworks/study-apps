@@ -187,20 +187,20 @@ footer{text-align:center;font-size:.7rem;color:var(--ink-light);margin-top:24px;
 <script>
 /* ====== 都市データ（教科書方式：標準時子午線を15の倍数に簡略化）====== */
 const CITIES = {
-  "ロンドン":      {lon:0,    x:480, y:95},
-  "パリ":          {lon:15,   x:495, y:103},
-  "カイロ":        {lon:30,   x:530, y:135},
-  "モスクワ":      {lon:45,   x:550, y:80},
-  "ドバイ":        {lon:60,   x:570, y:130},
-  "バンコク":      {lon:105,  x:640, y:150},
-  "ペキン":        {lon:120,  x:660, y:110},
-  "東京":          {lon:135,  x:690, y:115},
-  "シドニー":      {lon:150,  x:705, y:215},
-  "リオデジャネイロ":{lon:-45, x:330, y:205},
-  "ニューヨーク":  {lon:-75,  x:255, y:108},
-  "シカゴ":        {lon:-90,  x:225, y:103},
-  "デンバー":      {lon:-105, x:195, y:107},
-  "ロサンゼルス":  {lon:-120, x:170, y:115},
+  "ロンドン":      {lon:0},
+  "パリ":          {lon:15},
+  "カイロ":        {lon:30},
+  "モスクワ":      {lon:45},
+  "ドバイ":        {lon:60},
+  "バンコク":      {lon:105},
+  "ペキン":        {lon:120},
+  "東京":          {lon:135},
+  "シドニー":      {lon:150},
+  "リオデジャネイロ":{lon:-45},
+  "ニューヨーク":  {lon:-75},
+  "シカゴ":        {lon:-90},
+  "デンバー":      {lon:-105},
+  "ロサンゼルス":  {lon:-120},
 };
 const lonStr = l => l===0 ? "経度0度" : (l>0 ? `東経${l}度` : `西経${-l}度`);
 
@@ -289,41 +289,81 @@ function show(id){
 }
 function goMenu(){updateMenu();show("menu");}
 
-/* ====== 地図SVG ====== */
+/* ====== 地図SVG（日本中心・東経135度が中央） ====== */
+// 経度→x変換：東経135度=中央(420px)、1度=840/360=2.333px
+// 日本中心なので表示範囲は東経135-180 + 西経180〜東経135（つまり-45〜315度）
+function lonToX(lon){
+  // 日本中心：lon=135が中央(420)
+  let d = lon - 135;
+  if(d < -180) d += 360;
+  if(d > 180) d -= 360;
+  return 420 + d * (840/360);
+}
+// 都市の表示座標（日本中心地図用）
+const CITY_Y = {
+  "ロンドン":85, "パリ":92, "カイロ":125, "モスクワ":70,
+  "ドバイ":120, "バンコク":145, "ペキン":100, "東京":108,
+  "シドニー":210, "リオデジャネイロ":200, "ニューヨーク":98,
+  "シカゴ":92, "デンバー":100, "ロサンゼルス":110,
+};
 function mapSVG(a,b){
-  const A=CITIES[a],B=CITIES[b];
-  const grid = [];
-  for(let lon=-180;lon<=180;lon+=30){
-    const x = 480 + lon*(420/180)*0.5* (180/180); // 経度→x: 0度=480, 180度=690...実座標は都市に合わせ簡易
-  }
-  // 経線：x = 480 + lon * (210/180)... 都市座標は手置きなので飾りグリッドのみ
+  const A=CITIES[a], B=CITIES[b];
+  const xa=lonToX(A.lon), xb=lonToX(B.lon);
+  const ya=CITY_Y[a]||120, yb=CITY_Y[b]||120;
+
+  // 経線グリッド（30度ごと）
   let lines="";
-  for(let i=0;i<=12;i++){const x=60+i*60;lines+=`<line x1="${x}" y1="20" x2="${x}" y2="270" stroke="#bcd3e4" stroke-width="1" stroke-dasharray="3 4"/>`;}
-  const dateLine = `<line x1="780" y1="20" x2="780" y2="270" stroke="#c79aa1" stroke-width="2.5" stroke-dasharray="7 5"/><text x="775" y="38" font-size="13" fill="#c79aa1" text-anchor="end" font-weight="bold">日付変更線</text>`;
-  const dateLineL = `<line x1="60" y1="20" x2="60" y2="270" stroke="#c79aa1" stroke-width="2.5" stroke-dasharray="7 5"/>`;
-  const honsho = `<line x1="480" y1="20" x2="480" y2="270" stroke="#6f93b3" stroke-width="2"/><text x="486" y="38" font-size="12" fill="#6f93b3" font-weight="bold">本初子午線(0度)</text>`;
-  const pin = (c,col,name)=>`
-    <circle cx="${c.x}" cy="${c.y}" r="7" fill="${col}" stroke="#fff" stroke-width="2.5"/>
-    <text x="${c.x}" y="${c.y-13}" font-size="14" font-weight="bold" fill="${col}" text-anchor="middle">${name}</text>`;
-  return `<svg viewBox="0 0 840 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="世界地図">
-    <rect width="840" height="290" fill="#dceaf4"/>
-    ${continents()}
-    ${lines}${dateLineL}${dateLine}${honsho}
-    ${pin(A,"#6f93b3",a)}${pin(B,"#c79aa1",b)}
+  for(let lon=-45+135; lon<=135+180; lon+=30){
+    const x=lonToX(lon);
+    const label = lon>180 ? lon-360 : lon;
+    const ls = label===0?"0°": label>0?`東${label}°`:`西${-label}°`;
+    lines+=`<line x1="${x}" y1="18" x2="${x}" y2="265" stroke="#bcd3e4" stroke-width="1" stroke-dasharray="3 4"/>
+      <text x="${x}" y="278" font-size="9" fill="#8294a3" text-anchor="middle">${ls}</text>`;
+  }
+  // 日付変更線（東経180度）
+  const dlX = lonToX(180);
+  const dateLine=`<line x1="${dlX}" y1="18" x2="${dlX}" y2="265" stroke="#c79aa1" stroke-width="2.5" stroke-dasharray="7 5"/>
+    <text x="${dlX+4}" y="34" font-size="11" fill="#c79aa1" font-weight="bold">日付変更線</text>`;
+  // 本初子午線（0度）
+  const hmX = lonToX(0);
+  const honsho=`<line x1="${hmX}" y1="18" x2="${hmX}" y2="265" stroke="#6f93b3" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="${hmX+4}" y="34" font-size="10" fill="#6f93b3" font-weight="bold">0度</text>`;
+  // 東経135度線（日本標準時）
+  const jstX = lonToX(135);
+  const jst=`<line x1="${jstX}" y1="18" x2="${jstX}" y2="265" stroke="#9dbdd6" stroke-width="2"/>
+    <text x="${jstX+4}" y="50" font-size="10" fill="#9dbdd6" font-weight="bold">東経135°</text>`;
+
+  const pin=(x,y,col,name)=>`
+    <circle cx="${x}" cy="${y}" r="7" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+    <text x="${x}" y="${y-12}" font-size="13" font-weight="bold" fill="${col}" text-anchor="middle">${name}</text>`;
+
+  return `<svg viewBox="0 0 840 285" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="世界地図（日本中心）">
+    <rect width="840" height="285" fill="#dceaf4"/>
+    ${continentsJapanCenter()}
+    ${lines}${dateLine}${honsho}${jst}
+    ${pin(xa,ya,"#6f93b3",a)}${pin(xb,yb,"#c79aa1",b)}
   </svg>`;
 }
-function continents(){
-  // ざっくり大陸シルエット（簡略）
+function continentsJapanCenter(){
+  // 日本中心地図の大陸シルエット
+  // lonToX(135)=420 を基準に各大陸を配置
   const c="#c9d9c6";
-  return `
-  <path d="M120,55 Q180,35 250,50 Q300,55 310,90 Q290,130 250,140 Q230,170 200,160 Q170,150 150,120 Q110,95 120,55Z" fill="${c}"/>
-  <path d="M270,165 Q320,160 345,195 Q355,240 330,265 Q300,270 290,235 Q270,200 270,165Z" fill="${c}"/>
-  <path d="M455,60 Q520,45 560,65 Q545,95 520,100 Q495,110 470,95 Q450,80 455,60Z" fill="${c}"/>
-  <path d="M480,115 Q540,105 560,140 Q570,185 540,215 Q505,225 490,185 Q470,145 480,115Z" fill="${c}"/>
-  <path d="M560,60 Q650,40 720,70 Q740,100 700,120 Q670,140 630,135 Q590,125 565,100 Q550,80 560,60Z" fill="${c}"/>
-  <path d="M620,145 Q660,140 670,165 Q655,185 630,180 Q615,165 620,145Z" fill="${c}"/>
-  <path d="M670,195 Q720,190 740,215 Q735,245 700,248 Q665,240 660,215 Q660,200 670,195Z" fill="${c}"/>
-  <ellipse cx="700" cy="113" rx="10" ry="16" fill="${c}"/>`;
+  // アジア・オセアニア（中央付近）
+  const asia=`<path d="M350,55 Q420,40 490,55 Q530,65 540,95 Q520,130 490,140 Q460,155 430,145 Q400,130 380,105 Q345,80 350,55Z" fill="${c}"/>`;
+  const oceania=`<path d="M430,185 Q475,178 490,205 Q495,235 465,248 Q435,250 425,225 Q415,200 430,185Z" fill="${c}"/>`;
+  // 日本（少し目立たせる）
+  const japan=`<ellipse cx="500" cy="108" rx="12" ry="18" fill="${c}" stroke="#9dbdd6" stroke-width="1.5"/>`;
+  // ヨーロッパ・アフリカ（左寄り：0度=lonToX(0)=420-315=105px）
+  const europe=`<path d="M95,55 Q140,42 175,58 Q185,80 165,100 Q140,115 115,105 Q90,88 95,55Z" fill="${c}"/>`;
+  const africa=`<path d="M108,120 Q148,112 162,145 Q168,185 148,215 Q125,228 108,195 Q90,160 108,120Z" fill="${c}"/>`;
+  // 南北アメリカ（右端＋左端に分割表示）
+  // 西経75度=lonToX(-75)=420+(−75−135)*2.333=420−490≈右端と左端にまたがる
+  // 右端：lonToX(-75)=420+(-210)*2.333=420-490 → 負 → 右端に巻き回してx=840+(-70)=770
+  const namerica=`<path d="M740,55 Q790,45 820,65 Q830,95 805,115 Q775,128 750,110 Q725,90 740,55Z" fill="${c}"/>
+    <path d="M20,55 Q60,45 80,65 Q85,95 65,115 Q40,128 18,110 Q0,90 20,55Z" fill="${c}"/>`;
+  const samerica=`<path d="M760,165 Q795,158 808,190 Q812,228 785,245 Q758,248 748,218 Q738,188 760,165Z" fill="${c}"/>
+    <path d="M30,165 Q65,158 75,190 Q78,228 52,245 Q28,248 18,218 Q8,188 30,165Z" fill="${c}"/>`;
+  return asia+oceania+japan+europe+africa+namerica+samerica;
 }
 
 /* ====== 出題描画 ====== */
