@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>時差マスター | 世界の時差をマップで学ぼう</title>
+<style>
+:root{
+  --main:#9dbdd6;
+  --main-deep:#6f93b3;
+  --main-pale:#e9f1f7;
+  --pink:#e3c2c6;
+  --pink-deep:#c79aa1;
+  --ink:#4a5763;
+  --ink-light:#8294a3;
+  --bg:#f6f8fa;
+  --white:#ffffff;
+  --ok:#9fc7a8;
+  --ng:#d99a9a;
+  --radius:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  background:var(--bg);color:var(--ink);
+  min-height:100vh;display:flex;justify-content:center;
+  -webkit-text-size-adjust:100%;
+}
+.app{width:100%;max-width:560px;padding:16px 14px 40px;}
+header{text-align:center;padding:14px 0 6px;}
+header h1{font-size:1.35rem;color:var(--main-deep);letter-spacing:.06em;}
+header p{font-size:.78rem;color:var(--ink-light);margin-top:4px;}
+.card{background:var(--white);border-radius:var(--radius);padding:18px;margin-top:14px;
+  box-shadow:0 2px 10px rgba(111,147,179,.12);}
+.btn{display:block;width:100%;border:none;border-radius:14px;padding:14px;
+  font-size:1rem;font-family:inherit;cursor:pointer;transition:transform .12s,opacity .2s;
+  font-weight:bold;letter-spacing:.04em;}
+.btn:active{transform:scale(.97);}
+.btn-main{background:var(--main);color:#fff;}
+.btn-pink{background:var(--pink);color:#fff;}
+.btn-ghost{background:var(--main-pale);color:var(--main-deep);}
+.btn:disabled{opacity:.45;cursor:default;}
+.btn+.btn{margin-top:10px;}
+.tag{display:inline-block;background:var(--main-pale);color:var(--main-deep);
+  border-radius:999px;padding:3px 12px;font-size:.72rem;font-weight:bold;}
+.tag.pink{background:#f6e9ea;color:var(--pink-deep);}
+/* メニュー統計 */
+.stats{display:flex;gap:10px;margin-top:12px;}
+.stat{flex:1;background:var(--main-pale);border-radius:12px;padding:10px;text-align:center;}
+.stat .num{font-size:1.3rem;font-weight:bold;color:var(--main-deep);}
+.stat .lbl{font-size:.68rem;color:var(--ink-light);margin-top:2px;}
+/* クイズ画面 */
+.qhead{display:flex;justify-content:space-between;align-items:center;}
+.qnum{font-size:.85rem;color:var(--ink-light);font-weight:bold;}
+.progress{height:6px;background:var(--main-pale);border-radius:3px;margin:10px 0 14px;overflow:hidden;}
+.progress>div{height:100%;background:var(--main);border-radius:3px;transition:width .4s;}
+.mapwrap{border-radius:14px;overflow:hidden;background:#dceaf4;margin-bottom:12px;}
+.mapwrap svg{display:block;width:100%;height:auto;}
+.qtext{font-size:.95rem;line-height:1.7;background:var(--main-pale);
+  border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+.qtext b{color:var(--main-deep);}
+.answer-row{display:flex;gap:8px;align-items:center;}
+.answer-row input{flex:1;border:2px solid var(--main);border-radius:12px;
+  padding:12px;font-size:1.1rem;text-align:center;font-family:inherit;outline:none;}
+.answer-row .unit{font-size:.95rem;color:var(--ink-light);white-space:nowrap;}
+.answer-row button{flex:0 0 auto;width:auto;padding:12px 20px;margin:0;}
+.choices{display:grid;gap:8px;}
+.choice{border:2px solid var(--main-pale);background:#fff;border-radius:12px;
+  padding:12px;font-size:.92rem;font-family:inherit;cursor:pointer;text-align:left;
+  transition:border-color .15s,background .15s;color:var(--ink);}
+.choice:active{background:var(--main-pale);}
+.choice.sel-ok{border-color:var(--ok);background:#eef7f0;}
+.choice.sel-ng{border-color:var(--ng);background:#fbeeee;}
+.choice.show-ok{border-color:var(--ok);background:#eef7f0;}
+/* 結果バナー */
+.banner{border-radius:12px;padding:12px 14px;margin-top:12px;font-weight:bold;
+  display:flex;align-items:center;gap:8px;font-size:1rem;animation:pop .3s;}
+.banner.ok{background:#eef7f0;color:#5f8f6b;}
+.banner.ng{background:#fbeeee;color:#b07070;}
+@keyframes pop{0%{transform:scale(.92);opacity:0;}100%{transform:scale(1);opacity:1;}}
+/* 解説アニメ */
+.kaisetsu{margin-top:14px;border:2px dashed var(--pink);border-radius:14px;
+  padding:14px;background:#fdf9f9;}
+.kaisetsu h3{font-size:.9rem;color:var(--pink-deep);margin-bottom:10px;}
+.step{opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s;
+  background:#fff;border-radius:10px;padding:10px 12px;margin-top:8px;
+  font-size:.88rem;line-height:1.7;border-left:4px solid var(--main);}
+.step.show{opacity:1;transform:translateY(0);}
+.step .formula{display:block;text-align:center;font-size:1.05rem;font-weight:bold;
+  color:var(--main-deep);margin-top:4px;letter-spacing:.04em;}
+.numline{margin-top:10px;opacity:0;transition:opacity .6s;}
+.numline.show{opacity:1;}
+.numline svg{width:100%;height:auto;display:block;}
+.arc-path{stroke-dasharray:1000;stroke-dashoffset:1000;}
+.numline.show .arc-path{animation:draw 1.6s .3s forwards ease-out;}
+@keyframes draw{to{stroke-dashoffset:0;}}
+/* 結果画面 */
+.resultbig{text-align:center;padding:10px 0;}
+.resultbig .pct{font-size:3rem;font-weight:bold;color:var(--main-deep);}
+.resultbig .sub{font-size:.85rem;color:var(--ink-light);margin-top:4px;}
+.medal{font-size:2.2rem;margin-bottom:6px;}
+.wronglist{margin-top:12px;font-size:.82rem;color:var(--ink-light);
+  background:var(--main-pale);border-radius:12px;padding:10px 14px;line-height:1.8;}
+.hide{display:none!important;}
+footer{text-align:center;font-size:.7rem;color:var(--ink-light);margin-top:24px;}
+@media (prefers-reduced-motion: reduce){
+  .step,.numline,.banner{transition:none;animation:none;opacity:1;transform:none;}
+  .numline.show .arc-path{animation:none;stroke-dashoffset:0;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>🌏 時差マスター</h1>
+  <p>地図を見て、世界の都市との時差を計算しよう</p>
+</header>
+
+<!-- ===== メニュー画面 ===== -->
+<div id="menu">
+  <div class="card">
+    <span class="tag">レベル1</span>
+    <h2 style="font-size:1.05rem;margin:8px 0 4px;">時差を求めよう（基本）</h2>
+    <p style="font-size:.8rem;color:var(--ink-light);line-height:1.6;">2つの都市の経度から時差を計算する問題。日付変更線はまたぎません。全10問。</p>
+    <div class="stats">
+      <div class="stat"><div class="num" id="st1-best">--</div><div class="lbl">ベスト正答率</div></div>
+      <div class="stat"><div class="num" id="st1-plays">0</div><div class="lbl">挑戦回数</div></div>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-main" onclick="startQuiz(1,false)">スタート ▶</button>
+      <button class="btn btn-ghost" id="retry1" onclick="startQuiz(1,true)">間違えた問題だけリピート 🔁</button>
+    </div>
+  </div>
+  <div class="card">
+    <span class="tag pink">レベル2</span>
+    <h2 style="font-size:1.05rem;margin:8px 0 4px;">日付変更線をこえる問題（応用）</h2>
+    <p style="font-size:.8rem;color:var(--ink-light);line-height:1.6;">「東京が◯月◯日◯時のとき、現地は何日の何時？」日付の変化まで考える問題。全10問。</p>
+    <div class="stats">
+      <div class="stat"><div class="num" id="st2-best">--</div><div class="lbl">ベスト正答率</div></div>
+      <div class="stat"><div class="num" id="st2-plays">0</div><div class="lbl">挑戦回数</div></div>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-pink" onclick="startQuiz(2,false)">スタート ▶</button>
+      <button class="btn btn-ghost" id="retry2" onclick="startQuiz(2,true)">間違えた問題だけリピート 🔁</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== クイズ画面 ===== -->
+<div id="quiz" class="hide">
+  <div class="card">
+    <div class="qhead">
+      <span class="tag" id="qlevel">レベル1</span>
+      <span class="qnum" id="qnum">1 / 10</span>
+    </div>
+    <div class="progress"><div id="qbar" style="width:0%"></div></div>
+    <div class="mapwrap" id="mapbox"></div>
+    <div class="qtext" id="qtext"></div>
+    <div id="inputArea"></div>
+    <div id="banner"></div>
+    <div id="kaisetsu"></div>
+    <button class="btn btn-main hide" id="nextBtn" onclick="nextQ()" style="margin-top:14px;">次の問題へ ▶</button>
+  </div>
+  <button class="btn btn-ghost" style="margin-top:12px;" onclick="goMenu()">← メニューに戻る</button>
+</div>
+
+<!-- ===== 結果画面 ===== -->
+<div id="result" class="hide">
+  <div class="card">
+    <div class="resultbig">
+      <div class="medal" id="rmedal">🌟</div>
+      <div class="pct" id="rpct">100%</div>
+      <div class="sub" id="rsub"></div>
+    </div>
+    <div class="wronglist" id="rwrong"></div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-pink hide" id="rRetryBtn">間違えた問題をリピート 🔁</button>
+      <button class="btn btn-main" id="rAgainBtn">もう一度はじめから</button>
+      <button class="btn btn-ghost" onclick="goMenu()">メニューへ戻る</button>
+    </div>
+  </div>
+</div>
+
+<footer>1時間 = 経度15度 ／ 東にある都市ほど時刻が進んでいるよ</footer>
+</div>
+
+<script>
+/* ====== 都市データ（教科書方式：標準時子午線を15の倍数に簡略化）====== */
+const CITIES = {
+  "ロンドン":      {lon:0,    x:480, y:95},
+  "パリ":          {lon:15,   x:495, y:103},
+  "カイロ":        {lon:30,   x:530, y:135},
+  "モスクワ":      {lon:45,   x:550, y:80},
+  "ドバイ":        {lon:60,   x:570, y:130},
+  "バンコク":      {lon:105,  x:640, y:150},
+  "ペキン":        {lon:120,  x:660, y:110},
+  "東京":          {lon:135,  x:690, y:115},
+  "シドニー":      {lon:150,  x:705, y:215},
+  "リオデジャネイロ":{lon:-45, x:330, y:205},
+  "ニューヨーク":  {lon:-75,  x:255, y:108},
+  "シカゴ":        {lon:-90,  x:225, y:103},
+  "デンバー":      {lon:-105, x:195, y:107},
+  "ロサンゼルス":  {lon:-120, x:170, y:115},
+};
+const lonStr = l => l===0 ? "経度0度" : (l>0 ? `東経${l}度` : `西経${-l}度`);
+
+/* ====== レベル1：時差計算問題（10問）====== */
+const POOL1 = [
+  ["東京","ロンドン"],["東京","カイロ"],["東京","ロサンゼルス"],
+  ["東京","ニューヨーク"],["パリ","ペキン"],["ロンドン","シドニー"],
+  ["ニューヨーク","パリ"],["モスクワ","東京"],["カイロ","リオデジャネイロ"],
+  ["バンコク","ロサンゼルス"],
+].map(([a,b],i)=>{
+  const A=CITIES[a], B=CITIES[b];
+  const sameSide = (A.lon>=0) === (B.lon>=0) || A.lon===0 || B.lon===0;
+  const deg = Math.abs(A.lon - B.lon); // 0度経由（日付変更線をまたがない）
+  return {id:"L1-"+i, level:1, a, b, deg, sameSide, ans: deg/15};
+});
+
+/* ====== レベル2：日付変更線・日時問題（10問）====== */
+/* 東京 ◯月◯日 h時 のとき、都市Xの日時は？（東京基準・西へ行くと時刻が遅れる） */
+const POOL2 = [
+  ["ロサンゼルス","1月1日", 9],
+  ["ニューヨーク","8月10日", 7],
+  ["ロサンゼルス","4月5日", 14],
+  ["シカゴ","12月31日", 23],
+  ["リオデジャネイロ","6月15日", 6],
+  ["ロサンゼルス","7月20日", 10],
+  ["ニューヨーク","3月3日", 12],
+  ["デンバー","10月8日", 8],
+  ["ニューヨーク","1月1日", 5],
+  ["ロサンゼルス","9月30日", 21],
+].map(([b,date,h],i)=>{
+  const diff = (135 + (-CITIES[b].lon)) / 15; // 東経+西経の和÷15
+  return {id:"L2-"+i, level:2, a:"東京", b, date, h, diff};
+});
+
+/* ====== 日付ユーティリティ ====== */
+const DAYS = {1:31,2:28,3:31,4:30,5:31,6:30,7:31,8:31,9:30,10:31,11:30,12:31};
+function parseDate(s){const m=s.match(/(\d+)月(\d+)日/);return [ +m[1], +m[2] ];}
+function shiftDateTime(date,h,deltaH){ // deltaH 負=遅らせる
+  let [mo,d]=parseDate(date); let hh=h+deltaH;
+  while(hh<0){hh+=24; d--; if(d<1){mo--; if(mo<1)mo=12; d=DAYS[mo];}}
+  while(hh>=24){hh-=24; d++; if(d>DAYS[mo]){d=1;mo++; if(mo>12)mo=1;}}
+  return {mo,d,hh};
+}
+const fmtDT = o => `${o.mo}月${o.d}日 ${o.hh<12?"午前":"午後"}${o.hh%12===0?12:o.hh%12}時`;
+
+/* ====== 永続化（使えない環境でも動くようフォールバック）====== */
+let mem={};
+function load(k,def){try{const v=localStorage.getItem("jisa_"+k);return v?JSON.parse(v):def;}catch(e){return mem[k]??def;}}
+function save(k,v){try{localStorage.setItem("jisa_"+k,JSON.stringify(v));}catch(e){mem[k]=v;}}
+
+/* ====== 状態 ====== */
+let state = null;
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function updateMenu(){
+  for(const lv of [1,2]){
+    const rec = load("rec"+lv,{best:null,plays:0});
+    document.getElementById(`st${lv}-best`).textContent = rec.best===null?"--":rec.best+"%";
+    document.getElementById(`st${lv}-plays`).textContent = rec.plays;
+    const wrongs = load("wrong"+lv,[]);
+    document.getElementById("retry"+lv).disabled = wrongs.length===0;
+    document.getElementById("retry"+lv).textContent =
+      wrongs.length ? `間違えた問題だけリピート 🔁（${wrongs.length}問）` : "間違えた問題だけリピート 🔁";
+  }
+}
+
+function startQuiz(level, retryMode){
+  const pool = level===1 ? POOL1 : POOL2;
+  let qs;
+  if(retryMode){
+    const ids = load("wrong"+level,[]);
+    qs = shuffle(pool.filter(q=>ids.includes(q.id)));
+    if(qs.length===0) return;
+  }else{
+    qs = shuffle(pool);
+  }
+  state = {level, retryMode, qs, idx:0, correct:0, wrongIds:[]};
+  show("quiz");
+  renderQ();
+}
+
+function show(id){
+  for(const s of ["menu","quiz","result"]) document.getElementById(s).classList.toggle("hide", s!==id);
+  window.scrollTo(0,0);
+}
+function goMenu(){updateMenu();show("menu");}
+
+/* ====== 地図SVG ====== */
+function mapSVG(a,b){
+  const A=CITIES[a],B=CITIES[b];
+  const grid = [];
+  for(let lon=-180;lon<=180;lon+=30){
+    const x = 480 + lon*(420/180)*0.5* (180/180); // 経度→x: 0度=480, 180度=690...実座標は都市に合わせ簡易
+  }
+  // 経線：x = 480 + lon * (210/180)... 都市座標は手置きなので飾りグリッドのみ
+  let lines="";
+  for(let i=0;i<=12;i++){const x=60+i*60;lines+=`<line x1="${x}" y1="20" x2="${x}" y2="270" stroke="#bcd3e4" stroke-width="1" stroke-dasharray="3 4"/>`;}
+  const dateLine = `<line x1="780" y1="20" x2="780" y2="270" stroke="#c79aa1" stroke-width="2.5" stroke-dasharray="7 5"/><text x="775" y="38" font-size="13" fill="#c79aa1" text-anchor="end" font-weight="bold">日付変更線</text>`;
+  const dateLineL = `<line x1="60" y1="20" x2="60" y2="270" stroke="#c79aa1" stroke-width="2.5" stroke-dasharray="7 5"/>`;
+  const honsho = `<line x1="480" y1="20" x2="480" y2="270" stroke="#6f93b3" stroke-width="2"/><text x="486" y="38" font-size="12" fill="#6f93b3" font-weight="bold">本初子午線(0度)</text>`;
+  const pin = (c,col,name)=>`
+    <circle cx="${c.x}" cy="${c.y}" r="7" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+    <text x="${c.x}" y="${c.y-13}" font-size="14" font-weight="bold" fill="${col}" text-anchor="middle">${name}</text>`;
+  return `<svg viewBox="0 0 840 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="世界地図">
+    <rect width="840" height="290" fill="#dceaf4"/>
+    ${continents()}
+    ${lines}${dateLineL}${dateLine}${honsho}
+    ${pin(A,"#6f93b3",a)}${pin(B,"#c79aa1",b)}
+  </svg>`;
+}
+function continents(){
+  // ざっくり大陸シルエット（簡略）
+  const c="#c9d9c6";
+  return `
+  <path d="M120,55 Q180,35 250,50 Q300,55 310,90 Q290,130 250,140 Q230,170 200,160 Q170,150 150,120 Q110,95 120,55Z" fill="${c}"/>
+  <path d="M270,165 Q320,160 345,195 Q355,240 330,265 Q300,270 290,235 Q270,200 270,165Z" fill="${c}"/>
+  <path d="M455,60 Q520,45 560,65 Q545,95 520,100 Q495,110 470,95 Q450,80 455,60Z" fill="${c}"/>
+  <path d="M480,115 Q540,105 560,140 Q570,185 540,215 Q505,225 490,185 Q470,145 480,115Z" fill="${c}"/>
+  <path d="M560,60 Q650,40 720,70 Q740,100 700,120 Q670,140 630,135 Q590,125 565,100 Q550,80 560,60Z" fill="${c}"/>
+  <path d="M620,145 Q660,140 670,165 Q655,185 630,180 Q615,165 620,145Z" fill="${c}"/>
+  <path d="M670,195 Q720,190 740,215 Q735,245 700,248 Q665,240 660,215 Q660,200 670,195Z" fill="${c}"/>
+  <ellipse cx="700" cy="113" rx="10" ry="16" fill="${c}"/>`;
+}
+
+/* ====== 出題描画 ====== */
+function renderQ(){
+  const q = state.qs[state.idx];
+  document.getElementById("qlevel").textContent = "レベル"+state.level + (state.retryMode?"・リピート":"");
+  document.getElementById("qlevel").className = "tag" + (state.level===2?" pink":"");
+  document.getElementById("qnum").textContent = `${state.idx+1} / ${state.qs.length}`;
+  document.getElementById("qbar").style.width = (state.idx/state.qs.length*100)+"%";
+  document.getElementById("mapbox").innerHTML = mapSVG(q.a, q.b);
+  document.getElementById("banner").innerHTML = "";
+  document.getElementById("kaisetsu").innerHTML = "";
+  document.getElementById("nextBtn").classList.add("hide");
+  const ia = document.getElementById("inputArea");
+
+  if(state.level===1){
+    document.getElementById("qtext").innerHTML =
+      `<b>${q.a}</b>（${lonStr(CITIES[q.a].lon)}）と <b>${q.b}</b>（${lonStr(CITIES[q.b].lon)}）の<b>時差</b>は何時間？`;
+    ia.innerHTML = `<div class="answer-row">
+      <input type="number" id="ansIn" inputmode="numeric" placeholder="?" min="0" max="24">
+      <span class="unit">時間</span>
+      <button class="btn btn-main" onclick="checkL1()">答える</button></div>`;
+    document.getElementById("ansIn").addEventListener("keydown",e=>{if(e.key==="Enter")checkL1();});
+    document.getElementById("ansIn").focus();
+  }else{
+    const correct = shiftDateTime(q.date, q.h, -q.diff);
+    const opts = makeChoices(q, correct);
+    document.getElementById("qtext").innerHTML =
+      `<b>東京</b>（東経135度）が <b>${q.date} ${q.h<12?"午前":"午後"}${q.h%12===0?12:q.h%12}時</b> のとき、<b>${q.b}</b>（${lonStr(CITIES[q.b].lon)}）は何月何日の何時？`;
+    ia.innerHTML = `<div class="choices">` + opts.map((o,i)=>
+      `<button class="choice" data-ok="${o.ok?1:0}" onclick="checkL2(this)">${String.fromCharCode(65+i)}．${o.label}</button>`).join("") + `</div>`;
+  }
+}
+function makeChoices(q, correct){
+  const set = new Map();
+  set.set(fmtDT(correct), {label:fmtDT(correct), ok:true});
+  const deltas = [-q.diff+24, -q.diff-24, q.diff-q.diff*2-1, -q.diff+1, -q.diff-1, q.diff*-1+2];
+  for(const d of deltas){
+    if(set.size>=4) break;
+    const o = shiftDateTime(q.date, q.h, d);
+    const lbl = fmtDT(o);
+    if(!set.has(lbl)) set.set(lbl, {label:lbl, ok:false});
+  }
+  return shuffle([...set.values()]);
+}
+
+/* ====== 採点 ====== */
+function checkL1(){
+  const q = state.qs[state.idx];
+  const inEl = document.getElementById("ansIn");
+  if(inEl.value==="") return;
+  const v = Number(inEl.value);
+  inEl.disabled = true;
+  document.querySelector(".answer-row button").disabled = true;
+  judge(v === q.ans, q, ()=>kaisetsuL1(q));
+}
+function checkL2(btn){
+  const q = state.qs[state.idx];
+  const ok = btn.dataset.ok==="1";
+  document.querySelectorAll(".choice").forEach(c=>{
+    c.disabled = true;
+    if(c.dataset.ok==="1") c.classList.add("show-ok");
+  });
+  btn.classList.add(ok?"sel-ok":"sel-ng");
+  judge(ok, q, ()=>kaisetsuL2(q));
+}
+function judge(ok, q, explain){
+  const banner = document.getElementById("banner");
+  if(ok){
+    state.correct++;
+    banner.innerHTML = `<div class="banner ok">⭕ 正解！すごい！</div>`;
+    // リピートで正解したら間違いリストから外す
+    if(state.retryMode){
+      const w = load("wrong"+state.level,[]).filter(id=>id!==q.id);
+      save("wrong"+state.level, w);
+    }
+  }else{
+    banner.innerHTML = `<div class="banner ng">❌ ざんねん…解き方を見てみよう！</div>`;
+    state.wrongIds.push(q.id);
+    const w = load("wrong"+state.level,[]);
+    if(!w.includes(q.id)){w.push(q.id);save("wrong"+state.level,w);}
+    explain();
+  }
+  document.getElementById("nextBtn").classList.remove("hide");
+}
+
+/* ====== 解説（アニメーション）====== */
+function numlineSVG(q){
+  const A=CITIES[q.a], B=CITIES[q.b];
+  const X = lon => 380 + lon*(340/180); // -180→40, 0→380, 180→720
+  const xa=X(A.lon), xb=X(B.lon);
+  const midY = 55;
+  let ticks="";
+  for(let lon=-180;lon<=180;lon+=45){
+    const x=X(lon);
+    ticks+=`<line x1="${x}" y1="100" x2="${x}" y2="110" stroke="#8294a3" stroke-width="1.5"/>
+      <text x="${x}" y="128" font-size="11" fill="#8294a3" text-anchor="middle">${lon===0?"0°":(lon>0?"東"+lon:"西"+(-lon))+"°"}</text>`;
+  }
+  return `<svg viewBox="0 0 760 140" xmlns="http://www.w3.org/2000/svg">
+    <line x1="30" y1="105" x2="730" y2="105" stroke="#8294a3" stroke-width="2"/>
+    <line x1="380" y1="30" x2="380" y2="112" stroke="#9dbdd6" stroke-width="2" stroke-dasharray="4 4"/>
+    ${ticks}
+    <path class="arc-path" d="M ${xa} 100 Q ${(xa+xb)/2} ${midY-40} ${xb} 100" fill="none" stroke="#c79aa1" stroke-width="3"/>
+    <circle cx="${xa}" cy="105" r="6" fill="#6f93b3"/><text x="${xa}" y="92" font-size="13" font-weight="bold" fill="#6f93b3" text-anchor="middle">${q.a}</text>
+    <circle cx="${xb}" cy="105" r="6" fill="#c79aa1"/><text x="${xb}" y="92" font-size="13" font-weight="bold" fill="#c79aa1" text-anchor="middle">${q.b}</text>
+    <text x="${(xa+xb)/2}" y="${midY-28}" font-size="14" font-weight="bold" fill="#c79aa1" text-anchor="middle">${q.deg!==undefined?q.deg:""}°</text>
+  </svg>`;
+}
+function kaisetsuL1(q){
+  const A=CITIES[q.a], B=CITIES[q.b];
+  const same = q.sameSide;
+  const f = same
+    ? `${Math.max(Math.abs(A.lon),Math.abs(B.lon))}° − ${Math.min(Math.abs(A.lon),Math.abs(B.lon))}° = ${q.deg}°`
+    : `${Math.abs(A.lon)}° ＋ ${Math.abs(B.lon)}° = ${q.deg}°`;
+  const box = document.getElementById("kaisetsu");
+  box.innerHTML = `<div class="kaisetsu">
+    <h3>📖 解き方をアニメーションで見てみよう</h3>
+    <div class="step">① まず2つの都市の経度をチェック！<br>
+      <b style="color:#6f93b3">${q.a}：${lonStr(A.lon)}</b> ／ <b style="color:#c79aa1">${q.b}：${lonStr(B.lon)}</b></div>
+    <div class="step">② ${same
+      ? "2つとも<b>同じ側</b>（または0度をふくむ）だから…経度の差を<b>引き算</b>！"
+      : "<b>東経と西経</b>に分かれているから…0度をまたいで<b>足し算</b>！"}
+      <span class="formula">${f}</span></div>
+    <div class="numline">${numlineSVG(q)}</div>
+    <div class="step">③ 経度15度 ＝ 時差1時間。だから15で割ると…
+      <span class="formula">${q.deg}° ÷ 15 ＝ <span style="color:#c79aa1">${q.ans}時間</span> ✨</span></div>
+  </div>`;
+  animateSteps(box);
+}
+function kaisetsuL2(q){
+  const B=CITIES[q.b];
+  const correct = shiftDateTime(q.date, q.h, -q.diff);
+  const sumF = `135° ＋ ${Math.abs(B.lon)}° ＝ ${135+Math.abs(B.lon)}° → ÷15 ＝ ${q.diff}時間`;
+  const qq = {a:"東京", b:q.b, deg:135+Math.abs(B.lon)};
+  const box = document.getElementById("kaisetsu");
+  box.innerHTML = `<div class="kaisetsu">
+    <h3>📖 解き方をアニメーションで見てみよう</h3>
+    <div class="step">① まず<b>時差</b>を計算。東京は東経135度、${q.b}は${lonStr(B.lon)}。東経と西経だから足し算！
+      <span class="formula">${sumF}</span></div>
+    <div class="numline">${numlineSVG(qq)}</div>
+    <div class="step">② どちらの時刻が進んでる？ → <b>東にある都市ほど時刻が進む</b>よ。<br>
+      東京の方が東にあるから、<b style="color:#c79aa1">${q.b}は東京より${q.diff}時間おくれている</b>！</div>
+    <div class="step">③ 東京の時刻から${q.diff}時間<b>もどす</b>と…
+      <span class="formula">${q.date} ${q.h}時 − ${q.diff}時間 ＝ <span style="color:#c79aa1">${fmtDT(correct)}</span> ✨</span>
+      ${parseDate(q.date)[1]!==correct.d ? `<br>⚠ 24時を逆にこえたから、<b>日付が前の日にもどる</b>のがポイント！` : ""}</div>
+  </div>`;
+  animateSteps(box);
+}
+function animateSteps(box){
+  const els = box.querySelectorAll(".step,.numline");
+  els.forEach((el,i)=>setTimeout(()=>el.classList.add("show"), 400 + i*900));
+}
+
+/* ====== 進行・結果 ====== */
+function nextQ(){
+  state.idx++;
+  if(state.idx >= state.qs.length){ showResult(); }
+  else renderQ();
+}
+function showResult(){
+  const total = state.qs.length;
+  const pct = Math.round(state.correct/total*100);
+  // 記録更新（リピートモードはベスト記録に含めない）
+  if(!state.retryMode){
+    const rec = load("rec"+state.level,{best:null,plays:0});
+    rec.plays++;
+    if(rec.best===null || pct>rec.best) rec.best = pct;
+    save("rec"+state.level, rec);
+  }
+  document.getElementById("rpct").textContent = pct+"%";
+  document.getElementById("rmedal").textContent = pct===100?"🏆":pct>=80?"🌟":pct>=50?"💪":"🌱";
+  document.getElementById("rsub").textContent =
+    `${total}問中 ${state.correct}問正解！` + (pct===100?" パーフェクト！":pct>=80?" あと少しで満点！":" 解説を見ながらもう一回チャレンジ！");
+  const wrongEl = document.getElementById("rwrong");
+  const pool = state.level===1?POOL1:POOL2;
+  if(state.wrongIds.length){
+    const names = state.wrongIds.map(id=>{const q=pool.find(p=>p.id===id);return `・${q.a}と${q.b}`;}).join("<br>");
+    wrongEl.innerHTML = `<b>まちがえた問題：</b><br>${names}`;
+    wrongEl.classList.remove("hide");
+  }else wrongEl.classList.add("hide");
+  const rb = document.getElementById("rRetryBtn");
+  const wrongs = load("wrong"+state.level,[]);
+  rb.classList.toggle("hide", wrongs.length===0);
+  rb.onclick = ()=>startQuiz(state.level,true);
+  document.getElementById("rAgainBtn").onclick = ()=>startQuiz(state.level,false);
+  show("result");
+}
+
+updateMenu();
+</script>
+</body>
+</html>
