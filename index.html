@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#FF69B4"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="スクールプランナー"/>
+<title>スクールプランナー 🌸</title>
+<link rel="manifest" href="./manifest.json"/>
+<style>
+:root{--pink:#FF69B4;--pink-dark:#C71585;--pink-light:#FFB6C1;--pink-pale:#FFF0F5;--pink-mid:#FFD6E7;--text:#444;--text-light:#888;--shadow:0 2px 12px rgba(255,105,180,.15);--radius:16px;--rsm:10px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:var(--pink-pale);color:var(--text);height:100dvh;overflow:hidden;}
+#app{display:flex;flex-direction:column;height:100dvh;}
+button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit;}
+input,textarea,select{font-family:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--pink-light);border-radius:4px;}
+/* Header */
+.hdr{display:flex;align-items:center;gap:8px;padding:12px 16px;background:linear-gradient(135deg,var(--pink),var(--pink-dark));color:white;flex-shrink:0;}
+.hdr h1{font-size:1.05rem;font-weight:700;letter-spacing:.05em;}
+/* Tab nav */
+.tab-nav{display:flex;background:white;border-top:1.5px solid var(--pink-mid);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0);}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 10px;color:var(--text-light);font-size:.65rem;font-weight:600;transition:all .15s;}
+.tab-btn.active{color:var(--pink);}
+.tab-icon{font-size:1.3rem;}
+.tab-btn.active .tab-icon{transform:scale(1.15);}
+/* Main area */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;z-index:100;animation:fadeIn .15s;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:white;border-radius:24px 24px 0 0;width:100%;max-height:88dvh;overflow-y:auto;animation:slideUp .2s ease;}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 12px;border-bottom:1.5px solid var(--pink-mid);position:sticky;top:0;background:white;z-index:1;}
+.modal-hdr h3{font-size:1.05rem;color:var(--pink-dark);font-weight:700;}
+.modal-close{width:32px;height:32px;border-radius:50%;background:var(--pink-pale);color:var(--pink-dark);font-size:.85rem;}
+.modal-body{padding:16px 20px 32px;}
+/* Form elements */
+.label{display:block;font-size:.8rem;font-weight:700;color:var(--pink-dark);margin-bottom:4px;margin-top:10px;}
+.label:first-child{margin-top:0;}
+.inp{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--pink-light);background:var(--pink-pale);outline:none;font-size:.9rem;resize:vertical;}
+.inp:focus{border-color:var(--pink);}
+.btn-primary{width:100%;padding:13px;border-radius:12px;background:var(--pink);color:white;font-weight:700;font-size:.95rem;margin-top:10px;}
+.btn-ghost{padding:12px 16px;border-radius:12px;background:var(--pink-pale);color:var(--text-light);font-size:.9rem;border:1.5px solid var(--pink-light);}
+.modal-actions{display:flex;gap:10px;margin-top:10px;}
+.subject-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.subj-chip{padding:5px 10px;border-radius:20px;font-size:.78rem;background:var(--pink-pale);color:var(--text);border:1.5px solid var(--pink-light);}
+.subj-chip.on{background:var(--pink);color:white;border-color:var(--pink);}
+/* WEEK TAB */
+.week-wrap{overflow:auto;flex:1;padding:8px;}
+.wtbl{border-collapse:collapse;min-width:max-content;width:100%;}
+.wtbl th{padding:6px 4px;font-size:.75rem;font-weight:700;background:var(--pink);color:white;position:sticky;top:0;z-index:2;min-width:58px;}
+.wtbl th.pth{min-width:24px;width:24px;}
+.wtbl td.pnum{text-align:center;font-size:.75rem;font-weight:700;color:white;position:sticky;left:0;z-index:1;width:24px;}
+.wtbl td.cell{padding:4px;border:1px solid var(--pink-mid);text-align:center;cursor:pointer;background:white;min-width:58px;}
+.wtbl td.cell:active{background:var(--pink-pale);}
+.cell-s{font-size:.72rem;font-weight:700;color:var(--pink-dark);line-height:1.2;}
+.cell-t{font-size:.6rem;color:var(--text-light);margin-top:2px;line-height:1.2;}
+.cell-add{color:var(--pink-light);font-size:1rem;}
+.cassette-col{opacity:.75;}
+/* WEEK NAV */
+.week-nav{display:flex;align-items:center;gap:6px;padding:8px 12px;background:white;border-bottom:1.5px solid var(--pink-mid);}
+.wnav-btn{width:32px;height:32px;border-radius:50%;background:var(--pink-pale);color:var(--pink-dark);font-size:1.2rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wnav-label{flex:1;text-align:center;font-size:.82rem;font-weight:700;color:var(--pink-dark);}
+.wnav-today{padding:4px 10px;border-radius:12px;background:var(--pink);color:white;font-size:.72rem;font-weight:700;}
+.wnav-reset{padding:4px 10px;border-radius:12px;background:#FEF2F5;color:#B85070;font-size:.72rem;font-weight:700;border:1.5px solid #F5C0CF;}
+.evt-row td{padding:2px;}
+.evt-label{font-size:.5rem !important;padding:2px 1px;}
+.evt-cell{background:#FFF8FC !important;}
+.evt-inp{width:100%;border:none;background:transparent;outline:none;font-size:.65rem;color:var(--pink-dark);text-align:center;padding:2px;}
+.cell-ov{background:#FFF0FA !important;}
+.cell-ov .cell-s{color:#B84875;}
+.th-date{font-size:.62rem;font-weight:400;opacity:.85;margin-top:1px;}
+.th-event{font-size:.7rem;margin-top:1px;}
+.cas-badge{font-size:.55rem;font-weight:700;border-radius:6px;padding:1px 5px;margin-top:2px;display:inline-block;}
+.cas-badge-A{background:#FFE8F5;color:#B84875;border:1px solid #F5B8D4;}
+.cas-badge-B{background:#E8F0FF;color:#4060B8;border:1px solid #B8C8F5;}
+.cas-bar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#FFF0FA;border-top:1.5px solid #F5C0CF;}
+.cas-bar-label{font-size:.65rem;color:var(--text-light);flex-shrink:0;}
+.cas-btn{display:flex;flex-direction:column;align-items:flex-start;padding:6px 12px;border-radius:12px;background:white;border:1.5px solid #F5C0CF;flex:1;gap:1px;cursor:pointer;}
+.cas-btn:active{background:#FFF0FA;}
+.cas-btn-title{font-size:.75rem;font-weight:700;color:#B84875;}
+.cas-btn-sub{font-size:.6rem;color:var(--text-light);}
+.cas-day-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.cas-day-btn{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:10px;background:var(--pink-pale);border:1.5px solid transparent;cursor:pointer;gap:2px;}
+.cas-day-btn.selected{background:var(--pink);border-color:var(--pink);}
+.cas-day-btn.selected .cas-day-name,.cas-day-btn.selected .cas-day-date{color:white;}
+.cas-day-btn.has-cas{border-color:#F5C0CF;}
+.cas-day-name{font-size:.78rem;font-weight:700;color:var(--text);}
+.cas-day-date{font-size:.6rem;color:var(--text-light);}
+.cas-day-existing{font-size:.55rem;padding:1px 4px;border-radius:5px;background:#FFE8F5;color:#B84875;margin-top:1px;}
+.sat-kagai-banner{display:flex;align-items:center;justify-content:center;padding:6px 12px;background:linear-gradient(90deg,#FFF3E0,#FFE0B2);color:#E65100;font-size:.78rem;font-weight:700;border-bottom:1.5px solid #FFCC80;letter-spacing:.04em;gap:6px;}
+/* DAY TAB */
+.day-nav{display:flex;align-items:center;gap:4px;padding:8px 10px;background:white;border-bottom:1.5px solid var(--pink-mid);}
+.day-sel{display:flex;gap:4px;flex:1;}
+.day-btn{flex:1;padding:6px 2px;border-radius:10px;font-size:.75rem;font-weight:600;background:var(--pink-pale);color:var(--text);border:1.5px solid transparent;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.day-btn .day-date{font-size:.62rem;color:var(--text-light);font-weight:400;}
+.day-btn.today{border-color:var(--pink-light);}
+.day-btn.active{background:var(--pink);color:white;border-color:var(--pink);}
+.day-btn.active .day-date{color:rgba(255,255,255,.8);}
+.day-event-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:white;border-radius:var(--rsm);border:1.5px dashed var(--pink-mid);}
+.day-event-icon{font-size:1rem;flex-shrink:0;}
+.day-event-inp{flex:1;border:none;background:none;outline:none;font-size:.82rem;color:var(--text);}
+.today-chip{padding:2px 8px;border-radius:10px;background:var(--pink);color:white;font-size:.68rem;font-weight:700;flex-shrink:0;}
+.event-banner{padding:7px 12px;border-radius:var(--rsm);background:linear-gradient(135deg,#FFE4EF,#FFD6E7);color:var(--pink-dark);font-size:.82rem;font-weight:700;text-align:center;}
+.day-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+.pd-card{background:white;border-radius:var(--rsm);padding:10px 12px;box-shadow:var(--shadow);border-left:4px solid var(--pink-light);}
+.pd-card.absent{border-left-color:#FF3B30;background:#fff5f5;}
+.pd-card.late{border-left-color:#FF9500;background:#fffbf0;}
+.pd-card.early{border-left-color:#FFD600;background:#fffef0;}
+.pd-hdr{display:flex;align-items:center;gap:8px;}
+.pd-badge{width:24px;height:24px;border-radius:50%;background:var(--pink);color:white;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pd-info{flex:1;cursor:pointer;}
+.pd-subj{font-size:.9rem;font-weight:700;color:var(--pink-dark);}
+.pd-tchr{display:block;font-size:.72rem;color:var(--text-light);}
+.att-btns{display:flex;gap:4px;}
+.att-btn{padding:0 8px;height:30px;border-radius:8px;font-size:.78rem;font-weight:700;background:var(--pink-pale);color:var(--text-light);}
+.att-btn.absent{background:#FF3B30;color:white;}
+.att-btn.late{background:#FF9500;color:white;}
+.att-btn.early{background:#FFD600;color:#555;}
+.pd-assigns{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.ia{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:8px;font-size:.78rem;gap:8px;}
+.ia.ok{background:var(--pink-pale);color:var(--pink-dark);}
+.ia.near{background:#FFF3E0;color:#E65100;}
+.ia.overdue{background:#FFEBEE;color:#FF3B30;}
+.ia-dl{font-size:.7rem;font-weight:700;white-space:nowrap;}
+.add-assign-btn{margin-top:8px;width:100%;padding:7px;border-radius:8px;background:var(--pink-pale);color:var(--pink);font-size:.8rem;font-weight:600;border:1.5px dashed var(--pink-light);}
+/* ASSIGN TAB */
+.asgn-tool{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:white;border-bottom:1.5px solid var(--pink-mid);}
+.asgn-count{font-size:.85rem;font-weight:700;color:var(--pink-dark);}
+.btn-add{padding:8px 18px;border-radius:20px;background:var(--pink);color:white;font-weight:700;font-size:.85rem;}
+.asgn-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+.ac{background:white;border-radius:var(--rsm);padding:10px 12px;box-shadow:var(--shadow);border-left:4px solid var(--pink-light);}
+.ac.near{border-left-color:#FFA500;background:#fffbf0;}
+.ac.overdue{border-left-color:#FF3B30;background:#fff5f5;}
+.ac.done{background:#f8f8f8;border-left-color:#ccc;opacity:.7;}
+.ac-row{display:flex;align-items:flex-start;gap:8px;}
+.chk-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--pink);color:var(--pink);font-size:.85rem;font-weight:700;flex-shrink:0;margin-top:1px;}
+.chk-done{width:28px;height:28px;border-radius:50%;background:#34C759;color:white;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ac-info{flex:1;min-width:0;}
+.ac-title{font-size:.9rem;font-weight:700;}
+.ac-title.done{text-decoration:line-through;color:var(--text-light);}
+.ac-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:3px;}
+.ac-subj{font-size:.72rem;background:var(--pink-pale);color:var(--pink-dark);padding:2px 8px;border-radius:10px;font-weight:600;}
+.ac-dl{font-size:.72rem;font-weight:600;}
+.ac-memo{font-size:.75rem;color:var(--text-light);margin-top:4px;}
+.del-btn{color:var(--pink-light);font-size:.8rem;padding:4px;flex-shrink:0;}
+.undo-btn{font-size:.72rem;color:var(--text-light);padding:4px 8px;border:1px solid #ddd;border-radius:6px;flex-shrink:0;background:white;}
+.near-banner{margin-top:6px;padding:3px 8px;background:#FFF3E0;color:#E65100;border-radius:6px;font-size:.72rem;font-weight:700;}
+.over-banner{margin-top:6px;padding:3px 8px;background:#FFEBEE;color:#FF3B30;border-radius:6px;font-size:.72rem;font-weight:700;}
+.toggle-done{width:100%;padding:10px;border-radius:10px;background:var(--pink-pale);color:var(--text-light);font-size:.82rem;font-weight:600;border:1.5px dashed var(--pink-light);margin-top:4px;}
+/* CREDIT TAB */
+.cred-tool{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:white;border-bottom:1.5px solid var(--pink-mid);}
+.cred-ttl{font-size:.95rem;font-weight:700;color:var(--pink-dark);}
+.btn-setup{padding:7px 14px;border-radius:20px;background:var(--pink-pale);color:var(--pink-dark);font-size:.8rem;font-weight:600;border:1.5px solid var(--pink-light);}
+.legend{display:flex;gap:8px;padding:6px 16px;background:white;border-bottom:1px solid var(--pink-mid);flex-wrap:wrap;}
+.leg{font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:10px;}
+.cred-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+.crd{background:white;border-radius:var(--rsm);padding:12px;box-shadow:var(--shadow);}
+.crd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;}
+.crd-name{font-size:.9rem;font-weight:700;}
+.crd-meta{font-size:.7rem;color:var(--text-light);margin-top:2px;}
+.crd-badge{padding:4px 10px;border-radius:12px;color:white;font-size:.72rem;font-weight:700;white-space:nowrap;}
+.crd-ctrs{display:flex;gap:12px;flex-wrap:wrap;}
+.ctr-row{display:flex;align-items:center;gap:6px;}
+.ctr-lbl{font-size:.75rem;color:var(--text-light);min-width:28px;}
+.ctr-note{font-size:.65rem;color:var(--text-light);}
+.ctr-btn{width:28px;height:28px;border-radius:8px;background:var(--pink-pale);color:var(--pink-dark);font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--pink-light);}
+.ctr-val{min-width:24px;text-align:center;font-size:.9rem;font-weight:700;}
+.crd-alert{margin-top:8px;padding:5px 10px;border-radius:8px;font-size:.75rem;font-weight:700;background:rgba(0,0,0,.04);}
+.setup-note{font-size:.78rem;color:var(--text-light);margin-bottom:10px;background:var(--pink-pale);padding:8px 12px;border-radius:8px;}
+.setup-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--pink-mid);}
+.setup-subj{font-size:.82rem;font-weight:600;}
+.setup-inps{display:flex;align-items:center;gap:6px;}
+.setup-inps label{font-size:.72rem;color:var(--text-light);}
+.setup-num{width:52px;padding:6px 8px;border-radius:8px;border:1.5px solid var(--pink-light);background:var(--pink-pale);text-align:center;font-size:.9rem;font-weight:700;}
+.empty-msg{text-align:center;padding:40px;color:var(--text-light);font-size:.9rem;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+import { h, render } from 'https://esm.sh/preact@10.23.2'
+import { useState, useEffect, useCallback, useRef } from 'https://esm.sh/preact@10.23.2/hooks'
+import { html } from 'https://esm.sh/htm@3.1.1/preact'
+
+// ─── Data ───────────────────────────────────────────────────────────────────
+const DAYS = ['月','火','水','木','金']
+const JP_DAYS = ['日','月','火','水','木','金','土']
+const ALL_SUBJECTS = ['現代の国語','言語文化','歴史総合','公共','体育','保健','芸術','音楽I','美術I','書道I','英語CI','論理・表現I','家庭基礎','SS数学','SS物理','SS生物','LHR','探究I','HR','自習','休み']
+const SUBJECT_CREDITS = {
+  '現代の国語':{credits:2,cat:'国語'},'言語文化':{credits:3,cat:'国語'},
+  '歴史総合':{credits:2,cat:'地歴'},'公共':{credits:2,cat:'公民'},
+  '体育':{credits:2,cat:'保体'},'保健':{credits:1,cat:'保体'},
+  '芸術':{credits:2,cat:'芸術'},'英語CI':{credits:4,cat:'外国語'},
+  '論理・表現I':{credits:2,cat:'外国語'},'家庭基礎':{credits:2,cat:'家庭'},
+  'SS数学':{credits:6,cat:'SS'},'SS物理':{credits:2,cat:'SS'},
+  'SS生物':{credits:2,cat:'SS'},'LHR':{credits:1,cat:'特活'},'探究I':{credits:1,cat:'探究'},
+}
+const DEFAULT_SCHEDULE = {
+  '月':[{s:'体育',t:'小山・稲田・吉田'},{s:'歴史総合',t:'鈴木孝'},{s:'英語CI',t:'石井燦'},{s:'SS数学',t:'町'},{s:'家庭基礎',t:'菊池'},{s:'家庭基礎',t:'菊池'},{s:'言語文化',t:'古谷'}],
+  '火':[{s:'英語CI',t:'石井燦'},{s:'言語文化',t:'古谷'},{s:'保健',t:'小山'},{s:'SS数学',t:'町'},{s:'SS生物',t:'金田'},{s:'歴史総合',t:'鈴木孝'},null],
+  '水':[{s:'SS数学',t:'町'},{s:'英語CI',t:'石井燦'},{s:'SS生物',t:'金田'},{s:'芸術',t:'五十嵐・高嶋・中島'},{s:'現代の国語',t:'加藤'},{s:'体育',t:'小山・稲田・吉田'},null],
+  '木':[{s:'SS物理',t:'実川'},{s:'言語文化',t:'古谷'},{s:'SS数学',t:'町'},{s:'論理・表現I',t:'中里'},{s:'公共',t:'矢沢'},{s:'LHR',t:'小山'},null],
+  '金':[{s:'公共',t:'矢沢'},{s:'現代の国語',t:'加藤'},{s:'論理・表現I',t:'中里'},{s:'芸術',t:'五十嵐・高嶋・中島'},{s:'SS数学',t:'町'},{s:'探究I',t:'小山・実川'},null],
+  'カセット':[{s:'SS数学',t:'町'},{s:'SS物理',t:'実川'},{s:'英語CI',t:'石井燦'},null,null,null,null],
+}
+// 科目→先生の対応表（DEFAULT_SCHEDULEから自動生成）
+const SUBJECT_TEACHERS = {}
+Object.values(DEFAULT_SCHEDULE).forEach(periods => {
+  periods && periods.forEach(cell => {
+    if(cell && cell.s && !SUBJECT_TEACHERS[cell.s]) SUBJECT_TEACHERS[cell.s] = cell.t
+  })
+})
+
+// ─── Utils ──────────────────────────────────────────────────────────────────
+const today = () => new Date().toISOString().slice(0,10)
+const todayDayKey = () => JP_DAYS[new Date().getDay()]
+const fmtDate = d => { if(!d) return ''; const x=new Date(d+'T00:00:00'); return `${x.getMonth()+1}/${x.getDate()}(${JP_DAYS[x.getDay()]})`; }
+const fmtShort = d => { if(!d) return ''; const x=new Date(d+'T00:00:00'); return `${x.getMonth()+1}/${x.getDate()}`; }
+const daysUntil = d => { if(!d) return null; return Math.ceil((new Date(d+'T00:00:00')-new Date(today()+'T00:00:00'))/86400000); }
+const dlStatus = d => { const n=daysUntil(d); if(n===null) return 'none'; if(n<0) return 'overdue'; if(n<=3) return 'near'; return 'ok'; }
+const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6)
+const maxAbs = cr => Math.floor(cr*35/3)
+const effAbs = (a,l) => a+Math.floor((l||0)/3)
+// 週の月曜日を返す（offset=0が今週）
+const getWeekMonday = (offset=0) => {
+  const d=new Date(); const day=d.getDay()
+  const mon=new Date(d); mon.setDate(d.getDate()-(day===0?6:day-1)+offset*7); mon.setHours(0,0,0,0)
+  return mon
+}
+// 月〜金の日付文字列を返す（offset=0が今週）
+const getDateForDay = (dayKey, offset=0) => {
+  const idx=DAYS.indexOf(dayKey); if(idx<0) return null
+  const mon=getWeekMonday(offset); const d=new Date(mon); d.setDate(mon.getDate()+idx)
+  return d.toISOString().slice(0,10)
+}
+// date文字列から曜日キーを返す
+const dateToDay = dateStr => { const d=new Date(dateStr+'T00:00:00'); return JP_DAYS[d.getDay()]; }
+// ベース時間割 + 日付別上書きをマージ
+const getMergedSchedule = (base, dayKey, overrides, dateStr) => {
+  const bc=base[dayKey]||[]; const ov=overrides[dateStr]||{}
+  return bc.map((cell,i)=> i in ov ? ov[i] : cell)
+}
+
+// ─── Storage ────────────────────────────────────────────────────────────────
+const SK = 'school-planner-v2'
+const load = () => { try{ const s=localStorage.getItem(SK); return s?JSON.parse(s):null; }catch{return null;} }
+const init = () => { const s=load(); return { schedule:s?.schedule||DEFAULT_SCHEDULE, assignments:s?.assignments||[], attendance:s?.attendance||{}, dayAtt:s?.dayAtt||{}, schedOverrides:s?.schedOverrides||{}, dayEvents:s?.dayEvents||{} }; }
+
+// ─── Modal ──────────────────────────────────────────────────────────────────
+function Modal({title, onClose, children}) {
+  useEffect(()=>{ const fn=e=>{ if(e.key==='Escape') onClose(); }; window.addEventListener('keydown',fn); return ()=>window.removeEventListener('keydown',fn); },[])
+  return html`<div class="modal-overlay" onClick=${e=>e.target===e.currentTarget&&onClose()}>
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <h3>${title}</h3>
+        <button class="modal-close" onClick=${onClose}>✕</button>
+      </div>
+      <div class="modal-body">${children}</div>
+    </div>
+  </div>`
+}
+
+// ─── 土曜課外 ──────────────────────────────────────────────────────────────────
+const SATURDAY_KAGAI = [
+  '2026-05-09','2026-06-13','2026-07-04','2026-09-12',
+  '2026-10-03','2026-11-21','2026-12-05',
+  '2027-01-23','2027-02-20','2027-03-13',
+]
+const getWeekKagaiDate = (offset=0) => {
+  const mon = getWeekMonday(offset)
+  const monMs = mon.getTime()
+  return SATURDAY_KAGAI.find(d => {
+    const diff = Math.round((new Date(d+'T00:00:00').getTime() - monMs) / 86400000)
+    return diff >= 0 && diff <= 6
+  }) || null
+}
+
+// ─── WeekTab ─────────────────────────────────────────────────────────────────
+const COL_KEYS = [...DAYS]
+const P_COLORS = ['#FF69B4','#FF85C2','#FF9FCE','#FFB6C1','#FFC8D4','#FFD6E7','#FFE4EF']
+const CASSETTE = {
+  A: { 0:{s:'SS数学',t:'町'}, 1:{s:'SS物理',t:'実川'}, 2:{s:'英語CI',t:'石井燦'} },
+  B: { 3:{s:'SS数学',t:'町'}, 4:{s:'SS物理',t:'実川'}, 5:{s:'英語CI',t:'石井燦'} },
+}
+const CAS_LABEL = { A:'①SS数学 ②SS物理 ③英語CI', B:'④SS数学 ⑤SS物理 ⑥英語CI' }
+
+function WeekTab({schedule, onUpdate, dayEvents, onUpdDayEvents, schedOverrides, onUpdSchedOv}) {
+  const [edit, setEdit] = useState(null)
+  const [subj, setSubj] = useState('')
+  const [tchr, setTchr] = useState('')
+  const [wOff, setWOff] = useState(0)
+  const [casModal, setCasModal] = useState(null) // 'A' | 'B'
+  const [casDate, setCasDate] = useState(null)
+  const maxP = Math.max(...COL_KEYS.map(d=>schedule[d]?.length||0))
+
+  // カセット適用済みかチェック
+  const getCasType = dateStr => {
+    if(!dateStr) return null
+    const ov = schedOverrides[dateStr]
+    if(!ov) return null
+    for(const type of ['A','B']) {
+      if(Object.entries(CASSETTE[type]).every(([pi,cell])=>ov[pi]&&ov[pi].s===cell.s)) return type
+    }
+    return null
+  }
+
+  const applyCassette = () => {
+    if(!casDate) return
+    const newOv = {...schedOverrides}
+    if(!newOv[casDate]) newOv[casDate] = {}
+    newOv[casDate] = {...newOv[casDate], ...Object.fromEntries(
+      Object.entries(CASSETTE[casModal]).map(([pi,cell])=>[pi,cell])
+    )}
+    onUpdSchedOv(newOv); setCasModal(null); setCasDate(null)
+  }
+
+  const removeCassette = (dateStr, type) => {
+    const newOv = {...schedOverrides}
+    if(!newOv[dateStr]) return
+    Object.keys(CASSETTE[type]).forEach(pi => { delete newOv[dateStr][pi] })
+    if(Object.keys(newOv[dateStr]).length===0) delete newOv[dateStr]
+    onUpdSchedOv(newOv)
+  }
+
+  const mon = getWeekMonday(wOff)
+  const fri = new Date(mon); fri.setDate(mon.getDate()+4)
+  const weekLabel = `${mon.getMonth()+1}/${mon.getDate()} 〜 ${fri.getMonth()+1}/${fri.getDate()}`
+
+  const open = (day,pi) => { const c=schedule[day]?.[pi]; setSubj(c?.s||''); setTchr(c?.t||''); setEdit({day,pi}); }
+  const save = () => {
+    const {day,pi}=edit; const ns={...schedule}; const col=[...(ns[day]||[])];
+    while(col.length<=pi) col.push(null);
+    col[pi]=subj?{s:subj,t:tchr}:null; ns[day]=col; onUpdate(ns); setEdit(null);
+  }
+  const pickSubj = s => { setSubj(s); setTchr(SUBJECT_TEACHERS[s]||''); }
+
+  // ③ ベーススケジュールがデフォルトと違うか検出
+  const baseChanged = JSON.stringify(schedule) !== JSON.stringify(DEFAULT_SCHEDULE)
+  const weekHasOverride = DAYS.some(d=>{ const ds=getDateForDay(d,wOff); return ds&&schedOverrides[ds]&&Object.keys(schedOverrides[ds]).length>0; })
+  const showReset = baseChanged || weekHasOverride
+  const satKagaiDate = getWeekKagaiDate(wOff)
+  const hasSatKagai = !!satKagaiDate
+
+  const resetWeek = () => {
+    // この週のDAYタブ上書きを削除
+    const newOv={...schedOverrides}
+    DAYS.forEach(d=>{ const ds=getDateForDay(d,wOff); if(ds) delete newOv[ds]; })
+    onUpdSchedOv(newOv)
+    // ベーススケジュールもデフォルトに戻す
+    if(baseChanged) onUpdate(DEFAULT_SCHEDULE)
+  }
+
+  // ② 予定セルの更新
+  const setEvt = (dateStr, val) => onUpdDayEvents({...dayEvents,[dateStr]:{label:val}})
+
+  return html`<div style="display:flex;flex-direction:column;height:100%">
+    <div class="week-nav">
+      <button class="wnav-btn" onClick=${()=>setWOff(p=>p-1)}>‹</button>
+      <span class="wnav-label">${weekLabel}</span>
+      <button class="wnav-btn" onClick=${()=>setWOff(p=>p+1)}>›</button>
+      ${wOff!==0&&html`<button class="wnav-today" onClick=${()=>setWOff(0)}>今週</button>`}
+      ${showReset&&html`<button class="wnav-reset" onClick=${resetWeek}>🔄 デフォルトに戻す</button>`}
+    </div>
+    ${hasSatKagai&&html`<div class="sat-kagai-banner">🏫 ${fmtShort(satKagaiDate)}(土) 土曜課外</div>`}
+    <div class="week-wrap">
+      <table class="wtbl">
+        <thead><tr>
+          <th class="pth"></th>
+          ${COL_KEYS.map(d=>{
+            const dateStr = getDateForDay(d,wOff)
+            const casType = getCasType(dateStr)
+            return html`<th>
+              <div>${d}</div>
+              ${dateStr&&html`<div class="th-date">${fmtShort(dateStr)}</div>`}
+              ${casType&&html`<div class="cas-badge cas-badge-${casType}">カセ${casType}</div>`}
+            </th>`
+          })}
+        </tr></thead>
+        <tbody>
+          <tr class="evt-row">
+            <td class="pnum evt-label" style="background:#FFD6E7;font-size:.55rem;writing-mode:vertical-lr">予定</td>
+            ${COL_KEYS.map(day=>{
+              const dateStr = getDateForDay(day,wOff)
+              const val = dateStr ? (dayEvents[dateStr]?.label||'') : ''
+              return html`<td class="cell evt-cell">
+                <input class="evt-inp" value=${val} onInput=${e=>setEvt(dateStr,e.target.value)} placeholder="予定"/>
+              </td>`
+            })}
+          </tr>
+          ${Array.from({length:maxP},(_,i)=>html`<tr>
+            <td class="pnum" style="background:${P_COLORS[i]}">${i+1}</td>
+            ${COL_KEYS.map(day=>{
+              const c=schedule[day]?.[i]
+              const dateStr = getDateForDay(day,wOff)
+              const ov = dateStr && schedOverrides[dateStr] && i in schedOverrides[dateStr]
+              const cell = ov ? schedOverrides[dateStr][i] : c
+              return html`<td class=${`cell ${!cell?'empty':''} ${ov?'cell-ov':''}`} onClick=${()=>open(day,i)}>
+                ${cell?html`<div class="cell-s">${cell.s}${ov?' ✎':''}</div><div class="cell-t">${cell.t}</div>`:html`<div class="cell-add">＋</div>`}
+              </td>`
+            })}
+          </tr>`)}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cas-bar">
+      <span class="cas-bar-label">カセット適用</span>
+      ${['A','B'].map(type=>html`<button class="cas-btn" onClick=${()=>{setCasModal(type);setCasDate(null);}}>
+        <span class="cas-btn-title">カセット${type}</span>
+        <span class="cas-btn-sub">${CAS_LABEL[type]}</span>
+      </button>`)}</div>
+    ${casModal&&html`<${Modal} title="カセット${casModal}を適用する日を選んでください" onClose=${()=>setCasModal(null)}>
+      <p style="font-size:.75rem;color:var(--text-light);margin-bottom:10px">${CAS_LABEL[casModal]}</p>
+      <div class="cas-day-grid">
+        ${COL_KEYS.map(d=>{
+          const ds = getDateForDay(d,wOff)
+          const selected = casDate===ds
+          const existingType = getCasType(ds)
+          return html`<button class=${`cas-day-btn ${selected?'selected':''} ${existingType?'has-cas':''}`}
+            onClick=${()=>setCasDate(ds)}>
+            <span class="cas-day-name">${d}曜</span>
+            <span class="cas-day-date">${ds?fmtShort(ds):''}</span>
+            ${existingType&&html`<span class="cas-day-existing">カセ${existingType}</span>`}
+          </button>`
+        })}
+      </div>
+      <div class="modal-actions" style="margin-top:12px">
+        <button class="btn-ghost" onClick=${()=>setCasModal(null)}>キャンセル</button>
+        <button class="btn-primary" style="margin-top:0;flex:1" disabled=${!casDate} onClick=${applyCassette}>適用</button>
+      </div>
+      ${casDate&&getCasType(casDate)&&html`<div style="margin-top:8px;text-align:center">
+        <button style="font-size:.7rem;color:#B85070;background:none;border:none;cursor:pointer;text-decoration:underline"
+          onClick=${()=>{removeCassette(casDate,getCasType(casDate));setCasModal(null);}}>
+          カセット${getCasType(casDate)}を解除する
+        </button>
+      </div>`}
+    <//>`}
+    ${edit&&html`<${Modal} title="${edit.day}曜 ${edit.pi+1}限（テンプレート）" onClose=${()=>setEdit(null)}>
+      <p style="font-size:.75rem;color:var(--text-light);margin-bottom:8px">※ここでの変更は毎週の基本時間割に反映されます</p>
+      <span class="label">科目</span>
+      <div class="subject-grid" style="margin-bottom:8px">
+        ${ALL_SUBJECTS.map(s=>html`<button class=${`subj-chip ${subj===s?'on':''}`} onClick=${()=>pickSubj(s)}>${s}</button>`)}
+      </div>
+      <span class="label">または直接入力</span>
+      <input class="inp" value=${subj} onInput=${e=>setSubj(e.target.value)} placeholder="科目名"/>
+      <span class="label">先生</span>
+      <input class="inp" value=${tchr} onInput=${e=>setTchr(e.target.value)} placeholder="先生名"/>
+      <div class="modal-actions">
+        <button class="btn-ghost" onClick=${()=>{setSubj('');setTchr('');}}>空にする</button>
+        <button class="btn-primary" style="margin-top:0;flex:1" onClick=${save}>保存</button>
+      </div>
+    <//>`}
+  </div>`
+}
+
+// ─── DayTab ──────────────────────────────────────────────────────────────────
+function DayTab({schedule,assignments,dayAtt,attendance,schedOverrides,dayEvents,onUpdAsgn,onUpdDayAtt,onUpdAtt,onUpdSchedOv,onUpdDayEvents}) {
+  const todayKey = todayDayKey()
+  const [sel, setSel] = useState(DAYS.includes(todayKey)?todayKey:'月')
+  const [wOff, setWOff] = useState(0)
+  const [editCell, setEditCell] = useState(null)
+  const [addAsgn, setAddAsgn] = useState(null)
+  const [form, setForm] = useState({title:'',deadline:'',memo:''})
+
+  const dateStr = getDateForDay(sel, wOff)
+  const curDayAtt = dayAtt[dateStr]||{}
+  const periods = getMergedSchedule(schedule, sel, schedOverrides, dateStr)
+  const ev = dayEvents[dateStr]||{label:''}
+
+  const setAtt = (pi, st) => {
+    const cell=periods[pi]; if(!cell) return;
+    const newDay={...curDayAtt,[pi]:st}
+    onUpdDayAtt({...dayAtt,[dateStr]:newDay})
+    const subj=cell.s; const prev=curDayAtt[pi]
+    const sa={...(attendance[subj]||{absences:0,lates:0})}
+    if(prev==='absent') sa.absences=Math.max(0,sa.absences-1)
+    if(prev==='late'||prev==='early') sa.lates=Math.max(0,sa.lates-1)
+    if(st==='absent') sa.absences+=1
+    if(st==='late'||st==='early') sa.lates+=1
+    onUpdAtt({...attendance,[subj]:sa})
+  }
+
+  const subjAsgns = subj => assignments.filter(a=>!a.submitted&&a.subject===subj&&daysUntil(a.deadline)>=0)
+
+  const saveAsgn = () => {
+    if(!form.title.trim()) return
+    onUpdAsgn([...assignments,{id:genId(),subject:addAsgn.subj,title:form.title.trim(),deadline:form.deadline,memo:form.memo.trim(),submitted:false,submittedAt:null,createdAt:dateStr}])
+    setAddAsgn(null)
+  }
+
+  const saveCellEdit = (pi,s,t) => {
+    const newOv={...schedOverrides}
+    if(!newOv[dateStr]) newOv[dateStr]={}
+    newOv[dateStr]={...newOv[dateStr],[pi]:s?{s,t}:null}
+    onUpdSchedOv(newOv); setEditCell(null)
+  }
+
+  const saveEvent = (label) => {
+    onUpdDayEvents({...dayEvents,[dateStr]:{label}})
+  }
+
+  const isToday = dateStr===today()
+
+  return html`<div style="display:flex;flex-direction:column;height:100%">
+    <div class="day-nav">
+      <button class="wnav-btn" onClick=${()=>setWOff(p=>p-1)}>‹</button>
+      <div class="day-sel">
+        ${DAYS.map(d=>{
+          const ds=getDateForDay(d,wOff)
+          return html`<button class=${`day-btn ${sel===d?'active':''} ${ds===today()?'today':''}`} onClick=${()=>setSel(d)}>
+            <span>${d}</span>
+            <span class="day-date">${fmtShort(ds)}</span>
+          </button>`
+        })}
+      </div>
+      <button class="wnav-btn" onClick=${()=>setWOff(p=>p+1)}>›</button>
+    </div>
+    ${getWeekKagaiDate(wOff)&&html`<div class="sat-kagai-banner">🏫 ${fmtShort(getWeekKagaiDate(wOff))}(土) 土曜課外</div>`}
+
+    <div class="day-list">
+      <div class="day-event-row">
+        <span class="day-event-icon">🗒</span>
+        <input class="day-event-inp" value=${ev.label}
+          onInput=${e=>saveEvent(e.target.value)}
+          placeholder="特別予定（代休・文化祭・模試など）"/>
+        ${isToday&&html`<span class="today-chip">今日</span>`}
+      </div>
+
+      ${ev.label&&html`<div class="event-banner">📌 ${ev.label}</div>`}
+
+      ${periods.map((cell,i)=>{
+        if(!cell) return null
+        const att=curDayAtt[i]; const sa=subjAsgns(cell.s)
+        const isOverride = schedOverrides[dateStr]&&i in schedOverrides[dateStr]
+        return html`<div class=${`pd-card ${att==='absent'?'absent':att==='late'?'late':att==='early'?'early':''}`}>
+          <div class="pd-hdr">
+            <span class="pd-badge">${i+1}</span>
+            <div class="pd-info" onClick=${()=>setEditCell({pi:i,s:cell.s,t:cell.t})}>
+              <span class="pd-subj">${cell.s}${isOverride?' ✎':''}</span>
+              <span class="pd-tchr">${cell.t}</span>
+            </div>
+            <div class="att-btns">
+              <button class=${`att-btn ${att==='absent'?'absent':''}`} onClick=${()=>setAtt(i,att==='absent'?null:'absent')}>欠</button>
+              <button class=${`att-btn ${att==='late'?'late':''}`} onClick=${()=>setAtt(i,att==='late'?null:'late')}>遅</button>
+              <button class=${`att-btn ${att==='early'?'early':''}`} onClick=${()=>setAtt(i,att==='early'?null:'early')}>早</button>
+            </div>
+          </div>
+          ${sa.length>0&&html`<div class="pd-assigns">
+            ${sa.map(a=>{ const st=dlStatus(a.deadline); return html`<div class=${`ia ${st}`}>
+              <span>📌 ${a.title}</span>
+              ${a.deadline&&html`<span class="ia-dl">${fmtDate(a.deadline)}まで</span>`}
+            </div>`})}
+          </div>`}
+          <button class="add-assign-btn" onClick=${()=>{setAddAsgn({pi:i,subj:cell.s});setForm({title:'',deadline:'',memo:''});}}>＋ 課題・メモを追加</button>
+        </div>`
+      })}
+      ${periods.filter(Boolean).length===0&&html`<div class="empty-msg">この曜日の時間割は未設定です</div>`}
+    </div>
+
+    ${editCell&&html`<${Modal} title="${editCell.pi+1}限を変更（この日だけ）" onClose=${()=>setEditCell(null)}>
+      <p style="font-size:.75rem;color:var(--text-light);margin-bottom:8px">※この日（${fmtDate(dateStr)}）だけの変更です</p>
+      ${html`<${CellEditForm} cell=${editCell} onSave=${saveCellEdit}/>`}
+    <//>`}
+
+    ${addAsgn&&html`<${Modal} title="課題追加 — ${addAsgn.subj}" onClose=${()=>setAddAsgn(null)}>
+      <span class="label">タイトル *</span>
+      <input class="inp" value=${form.title} onInput=${e=>setForm(p=>({...p,title:e.target.value}))} placeholder="課題名" autofocus/>
+      <span class="label">〆切</span>
+      <input class="inp" type="date" value=${form.deadline} onInput=${e=>setForm(p=>({...p,deadline:e.target.value}))}/>
+      <span class="label">メモ</span>
+      <textarea class="inp" rows="3" value=${form.memo} onInput=${e=>setForm(p=>({...p,memo:e.target.value}))} placeholder="メモ（任意）"/>
+      <button class="btn-primary" onClick=${saveAsgn}>追加</button>
+    <//>`}
+  </div>`
+}
+
+function CellEditForm({cell,onSave}) {
+  const [s,setS]=useState(cell.s||''); const [t,setT]=useState(cell.t||'')
+  // ① 科目を選んだら先生を自動補完
+  const pickS = x => { setS(x); setT(SUBJECT_TEACHERS[x]||''); }
+  return html`<div>
+    <span class="label">科目</span>
+    <div class="subject-grid" style="margin-bottom:8px">${ALL_SUBJECTS.map(x=>html`<button class=${`subj-chip ${s===x?'on':''}`} onClick=${()=>pickS(x)}>${x}</button>`)}</div>
+    <span class="label">または直接入力</span>
+    <input class="inp" value=${s} onInput=${e=>setS(e.target.value)} placeholder="科目名"/>
+    <span class="label">先生</span>
+    <input class="inp" value=${t} onInput=${e=>setT(e.target.value)} placeholder="先生名（科目選択で自動補完）"/>
+    <div class="modal-actions">
+      <button class="btn-ghost" onClick=${()=>onSave(cell.pi,'','')}>空にする</button>
+      <button class="btn-primary" style="margin-top:0;flex:1" onClick=${()=>onSave(cell.pi,s,t)}>保存</button>
+    </div>
+  </div>`
+}
+
+// ─── AssignmentTab ───────────────────────────────────────────────────────────
+function AssignmentTab({assignments,onUpdate}) {
+  const [showAdd,setShowAdd]=useState(false)
+  const [showDone,setShowDone]=useState(false)
+  const [form,setForm]=useState({subject:'',title:'',deadline:'',memo:''})
+
+  const active=[...assignments].filter(a=>!a.submitted).sort((a,b)=>{
+    if(!a.deadline&&!b.deadline) return 0; if(!a.deadline) return 1; if(!b.deadline) return -1;
+    return a.deadline.localeCompare(b.deadline);
+  })
+  const done=[...assignments].filter(a=>a.submitted).sort((a,b)=>(b.submittedAt||'').localeCompare(a.submittedAt||''))
+
+  const addA = () => {
+    if(!form.title.trim()) return
+    onUpdate([...assignments,{id:genId(),subject:form.subject,title:form.title.trim(),deadline:form.deadline,memo:form.memo.trim(),submitted:false,submittedAt:null,createdAt:today()}])
+    setShowAdd(false); setForm({subject:'',title:'',deadline:'',memo:''});
+  }
+  const submit = id => onUpdate(assignments.map(a=>a.id===id?{...a,submitted:true,submittedAt:today()}:a))
+  const unsubmit = id => onUpdate(assignments.map(a=>a.id===id?{...a,submitted:false,submittedAt:null}:a))
+  const del = id => onUpdate(assignments.filter(a=>a.id!==id))
+
+  const dlLabel = d => {
+    const n=daysUntil(d); if(!d||n===null) return null;
+    if(n<0) return {text:`${Math.abs(n)}日超過⚠`,col:'#FF3B30'}
+    if(n===0) return {text:'今日が〆切！',col:'#FF3B30'}
+    if(n<=3) return {text:`あと${n}日`,col:'#E65100'}
+    return {text:`あと${n}日`,col:'var(--text-light)'}
+  }
+
+  return html`<div style="display:flex;flex-direction:column;height:100%">
+    <div class="asgn-tool">
+      <span class="asgn-count">${active.length}件の課題</span>
+      <button class="btn-add" onClick=${()=>setShowAdd(true)}>＋ 追加</button>
+    </div>
+    <div class="asgn-list">
+      ${active.length===0&&html`<div class="empty-msg">課題はありません 🌸</div>`}
+      ${active.map(a=>{
+        const st=dlStatus(a.deadline); const dl=dlLabel(a.deadline)
+        return html`<div class=${`ac ${st}`}>
+          <div class="ac-row">
+            <button class="chk-btn" onClick=${()=>submit(a.id)}>○</button>
+            <div class="ac-info">
+              <div class="ac-title">${a.title}</div>
+              <div class="ac-meta">
+                ${a.subject&&html`<span class="ac-subj">${a.subject}</span>`}
+                ${a.deadline&&html`<span class="ac-dl" style="color:${dl?.col||'var(--text-light)'}">${fmtDate(a.deadline)}${dl?` (${dl.text})`:''}</span>`}
+              </div>
+              ${a.memo&&html`<div class="ac-memo">${a.memo}</div>`}
+            </div>
+            <button class="del-btn" onClick=${()=>del(a.id)}>✕</button>
+          </div>
+          ${st==='near'&&html`<div class="near-banner">⏰ もうすぐ〆切！</div>`}
+          ${st==='overdue'&&html`<div class="over-banner">❗ 〆切超過</div>`}
+        </div>`
+      })}
+      <button class="toggle-done" onClick=${()=>setShowDone(p=>!p)}>
+        ${showDone?'▲':'▼'} 提出済み (${done.length}件)
+      </button>
+      ${showDone&&done.map(a=>html`<div class="ac done">
+        <div class="ac-row">
+          <span class="chk-done">✓</span>
+          <div class="ac-info">
+            <div class="ac-title done">${a.title}</div>
+            <div class="ac-meta">
+              ${a.subject&&html`<span class="ac-subj">${a.subject}</span>`}
+              ${a.submittedAt&&html`<span class="ac-dl">提出済: ${fmtDate(a.submittedAt)}</span>`}
+            </div>
+          </div>
+          <button class="undo-btn" onClick=${()=>unsubmit(a.id)}>戻す</button>
+        </div>
+      </div>`)}
+    </div>
+
+    ${showAdd&&html`<${Modal} title="課題を追加" onClose=${()=>setShowAdd(false)}>
+      <span class="label">科目</span>
+      <select class="inp" value=${form.subject} onChange=${e=>setForm(p=>({...p,subject:e.target.value}))}>
+        <option value="">-- 選択 --</option>
+        ${ALL_SUBJECTS.map(s=>html`<option value=${s}>${s}</option>`)}
+      </select>
+      <span class="label">タイトル *</span>
+      <input class="inp" value=${form.title} onInput=${e=>setForm(p=>({...p,title:e.target.value}))} placeholder="課題名" autofocus/>
+      <span class="label">〆切</span>
+      <input class="inp" type="date" value=${form.deadline} onInput=${e=>setForm(p=>({...p,deadline:e.target.value}))}/>
+      <span class="label">メモ</span>
+      <textarea class="inp" rows="3" value=${form.memo} onInput=${e=>setForm(p=>({...p,memo:e.target.value}))} placeholder="メモ（任意）"/>
+      <button class="btn-primary" onClick=${addA}>追加</button>
+    <//>`}
+  </div>`
+}
+
+// ─── CreditTab ───────────────────────────────────────────────────────────────
+const CRED_LIST = Object.entries(SUBJECT_CREDITS)
+const LVL = {
+  ok:    {bg:'white',   border:'#7aA898',icon:'✓',lbl:''},
+  warn:  {bg:'#FEF7F2', border:'#C47A50',icon:'⚠',lbl:'残3回'},
+  danger:{bg:'#FEF2F5', border:'#B85070',icon:'!',lbl:'残1回！'},
+  fail:  {bg:'#F4EEF3', border:'#8A4068',icon:'✗',lbl:'単位危険'},
+}
+
+function CreditTab({attendance,onUpdate}) {
+  const [showSetup,setShowSetup]=useState(false)
+  const [setup,setSetup]=useState({})
+
+  const getA = s => attendance[s]||{absences:0,lates:0}
+  const level = (s,cr) => {
+    const a=getA(s); const rem=maxAbs(cr)-effAbs(a.absences,a.lates)
+    if(rem<=0) return 'fail'; if(rem===1) return 'danger'; if(rem<=3) return 'warn'; return 'ok'
+  }
+  const adj = (s,f,d) => { const a=getA(s); onUpdate({...attendance,[s]:{...a,[f]:Math.max(0,(a[f]||0)+d)}}); }
+
+  const openSetup = () => {
+    const d={}; CRED_LIST.forEach(([s])=>{ const a=getA(s); d[s]={absences:a.absences,lates:a.lates}; }); setSetup(d); setShowSetup(true);
+  }
+  const saveSetup = () => {
+    const na={...attendance}
+    Object.entries(setup).forEach(([s,v])=>{ na[s]={absences:Number(v.absences)||0,lates:Number(v.lates)||0}; })
+    onUpdate(na); setShowSetup(false);
+  }
+
+  return html`<div style="display:flex;flex-direction:column;height:100%">
+    <div class="cred-tool">
+      <span class="cred-ttl">単位管理</span>
+      <button class="btn-setup" onClick=${openSetup}>初期欠席入力 / 修正</button>
+    </div>
+    <div class="legend">
+      <span class="leg" style="background:#E6F0ED;color:#4A7A6A">✓ 正常</span>
+      <span class="leg" style="background:#F8EDE4;color:#8A4A28">⚠ 残3回</span>
+      <span class="leg" style="background:#F8ECF0;color:#8A3050">! 残1回</span>
+      <span class="leg" style="background:#EDE4EC;color:#6A2848">✗ 危険</span>
+    </div>
+    <div class="cred-list">
+      ${CRED_LIST.map(([s,info])=>{
+        const a=getA(s); const max=maxAbs(info.credits); const eff=effAbs(a.absences,a.lates)
+        const rem=max-eff; const lv=level(s,info.credits); const cfg=LVL[lv]
+        return html`<div class="crd" style="border-left:4px solid ${cfg.border};background:${cfg.bg}">
+          <div class="crd-top">
+            <div>
+              <div class="crd-name">${s}</div>
+              <div class="crd-meta">${info.cat} · ${info.credits}単位 · 最大${max}回欠席可</div>
+            </div>
+            <div class="crd-badge" style="background:${cfg.border}">${cfg.icon} ${cfg.lbl||`残${Math.max(0,rem)}回`}</div>
+          </div>
+          <div class="crd-ctrs">
+            <div class="ctr-row">
+              <span class="ctr-lbl">欠席</span>
+              <button class="ctr-btn" onClick=${()=>adj(s,'absences',-1)}>−</button>
+              <span class="ctr-val">${a.absences}</span>
+              <button class="ctr-btn" onClick=${()=>adj(s,'absences',1)}>＋</button>
+            </div>
+            <div class="ctr-row">
+              <span class="ctr-lbl">遅刻</span>
+              <span class="ctr-note">(3=欠1)</span>
+              <button class="ctr-btn" onClick=${()=>adj(s,'lates',-1)}>−</button>
+              <span class="ctr-val">${a.lates}</span>
+              <button class="ctr-btn" onClick=${()=>adj(s,'lates',1)}>＋</button>
+            </div>
+          </div>
+          ${lv!=='ok'&&html`<div class="crd-alert" style="color:${cfg.border}">
+            ${lv==='fail'?`❗ 実効欠席${eff}回 / 上限${max}回 — 単位取得危険`:`⏰ あと${Math.max(0,rem)}回休んだら単位を落とす可能性`}
+          </div>`}
+        </div>`
+      })}
+    </div>
+
+    ${showSetup&&html`<${Modal} title="欠席・遅刻の現在数を入力" onClose=${()=>setShowSetup(false)}>
+      <p class="setup-note">今日までの欠席・遅刻数を入力してください（遅刻3回=欠席1回として計算）</p>
+      ${CRED_LIST.map(([s])=>html`<div class="setup-row">
+        <span class="setup-subj">${s}</span>
+        <div class="setup-inps">
+          <label>欠席</label>
+          <input class="setup-num" type="number" min="0" value=${setup[s]?.absences??0}
+            onInput=${e=>setSetup(p=>({...p,[s]:{...p[s],absences:e.target.value}}))}/>
+          <label>遅刻</label>
+          <input class="setup-num" type="number" min="0" value=${setup[s]?.lates??0}
+            onInput=${e=>setSetup(p=>({...p,[s]:{...p[s],lates:e.target.value}}))}/>
+        </div>
+      </div>`)}
+      <button class="btn-primary" onClick=${saveSetup}>保存</button>
+    <//>`}
+  </div>`
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+const TABS = [{id:0,label:'WEEK',icon:'📅'},{id:1,label:'DAY',icon:'🗓'},{id:2,label:'課題',icon:'📝'},{id:3,label:'単位',icon:'📊'}]
+
+function App() {
+  const [tab,setTab]=useState(1)
+  const [st,setSt]=useState(init)
+
+  useEffect(()=>{ localStorage.setItem(SK,JSON.stringify(st)); },[st])
+
+  const updSched    = useCallback(v=>setSt(s=>({...s,schedule:v})),[])
+  const updAsgn     = useCallback(v=>setSt(s=>({...s,assignments:v})),[])
+  const updAtt      = useCallback(v=>setSt(s=>({...s,attendance:v})),[])
+  const updDayAtt   = useCallback(v=>setSt(s=>({...s,dayAtt:v})),[])
+  const updSchedOv  = useCallback(v=>setSt(s=>({...s,schedOverrides:v})),[])
+  const updDayEvents= useCallback(v=>setSt(s=>({...s,dayEvents:v})),[])
+
+  return html`<div id="app">
+    <header class="hdr">
+      <span style="font-size:1.2rem">🌸</span>
+      <h1>スクールプランナー</h1>
+    </header>
+    <main class="main">
+      ${tab===0&&html`<${WeekTab} schedule=${st.schedule} onUpdate=${updSched} dayEvents=${st.dayEvents} onUpdDayEvents=${updDayEvents} schedOverrides=${st.schedOverrides} onUpdSchedOv=${updSchedOv}/>`}
+      ${tab===1&&html`<${DayTab} schedule=${st.schedule} assignments=${st.assignments} dayAtt=${st.dayAtt} attendance=${st.attendance} schedOverrides=${st.schedOverrides} dayEvents=${st.dayEvents} onUpdAsgn=${updAsgn} onUpdDayAtt=${updDayAtt} onUpdAtt=${updAtt} onUpdSchedOv=${updSchedOv} onUpdDayEvents=${updDayEvents}/>`}
+      ${tab===2&&html`<${AssignmentTab} assignments=${st.assignments} onUpdate=${updAsgn}/>`}
+      ${tab===3&&html`<${CreditTab} attendance=${st.attendance} onUpdate=${updAtt}/>`}
+    </main>
+    <nav class="tab-nav">
+      ${TABS.map(t=>html`<button class=${`tab-btn ${tab===t.id?'active':''}`} onClick=${()=>setTab(t.id)}>
+        <span class="tab-icon">${t.icon}</span>
+        <span>${t.label}</span>
+      </button>`)}
+    </nav>
+  </div>`
+}
+
+render(h(App,null), document.getElementById('app'))
+
+// PWA service worker
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{})
+}
+</script>
+</body>
+</html>
